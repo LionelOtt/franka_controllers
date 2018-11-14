@@ -1,0 +1,7 @@
+<library path="lib/libfranka_controllers">
+    <class name="franka_controllers/JointPositionController" type="franka_controllers::JointPositionController" base_class_type="controller_interface::ControllerBase">
+        <description>
+            Basic forwarding controller for the Franka arm.
+        </description>
+    </class>
+</library>
