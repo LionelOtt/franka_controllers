@@ -1,0 +1,17 @@
+<?xml version="1.0" ?>
+<launch>
+    <!-- Initialize frank ros controls -->
+    <arg name="robot_ip"/>
+    <arg name="load_gripper" default="true"/>
+    <include file="$(find franka_control)/launch/franka_control.launch">
+        <arg name="robot_ip" value="$(arg robot_ip)"/>
+        <arg name="load_gripper" value="$(arg load_gripper)"/>
+    </include>
+
+    <!-- Load controller parameters and launch the controller -->
+    <rosparam command="load" file="$(find franka_controllers)/config/controller.yaml"/>
+    <node name="controller_spawner" pkg="controller_manager" type="spawner" respawn="false" output="screen" args="joint_position_controller"/>
+
+    <!-- Launch RViz visualization -->
+    <!--<node pkg="rviz" type="rviz" output="screen" name="rviz" args="-d $(find franka_example_controllers)/launch/robot.rviz"/>-->
+</launch>
