@@ -2,6 +2,7 @@
 #define __JOINT_POSITION_CONTROLLER_H__
 
 
+#include <array>
 #include <mutex>
 #include <vector>
 
@@ -10,7 +11,6 @@
 #include <hardware_interface/robot_hw.h>
 #include <ros/node_handle.h>
 #include <ros/time.h>
-#include <sensor_msgs/JointState.h>
 #include <std_msgs/Float64.h>
 
 

@@ -1,5 +1,4 @@
 #include <franka_controllers/joint_position_controller.h>
-#include <franka_controllers/utils.h>
 
 #include <controller_interface/controller_base.h>
 #include <hardware_interface/hardware_interface.h>
@@ -10,6 +9,7 @@
 
 namespace fc
 {
+
 
 bool JointPositionController::init(
         hardware_interface::RobotHW *   robot_hardware,
@@ -33,12 +33,11 @@ bool JointPositionController::init(
     {
         ROS_ERROR("JointPositionController: Could not parse joint names");
     }
-    if(joint_names.size() != m_current_joint_position.size())
+    if(joint_names.size() != 7)
     {
         ROS_ERROR_STREAM(
             "JointPositionController: Wrong number of joint names, got"
-            << joint_names.size() << " instead of "
-            << m_current_joint_position.size() << " names!"
+            << joint_names.size() << " instead of 7 names!"
         );
         return false;
     }
@@ -61,24 +60,29 @@ bool JointPositionController::init(
     }
 
     m_command_sub = node_handle.subscribe(
-            get_param<std::string>("listen_topic", "/command"),
+            "/command",
             1,
             &JointPositionController::command_cb,
             this
     );
+
+    ROS_INFO("Init");
 
     return true;
 }
 
 void JointPositionController::starting(ros::Time const& time)
 {
-    // Store current position in order to prevent arm from jerking to
-    // a random position upon start
+    std::lock_guard<std::mutex> lock(m_command_mutex);
+
+    m_last_command.position.resize(m_joint_handles.size());
     for(size_t i=0; i<m_joint_handles.size(); ++i)
     {
         m_current_joint_position[i] = m_joint_handles[i].getPosition();
         m_last_command.position[i] = m_current_joint_position[i];
     }
+
+    ROS_INFO_STREAM("Starting position: " << m_last_command.position[4]);
 }
 
 void JointPositionController::update(
@@ -87,27 +91,29 @@ void JointPositionController::update(
 )
 {
     std::lock_guard<std::mutex> lock(m_command_mutex);
+    static const double max_change = 0.0005;
 
     for(size_t i=0; i<m_last_command.position.size(); ++i)
     {
         m_current_joint_position[i] = m_joint_handles[i].getPosition();
 
-        // Limit position change per call to 0.0001 rad
-        double delta = std::min(
-                m_last_command.position[i] - m_current_joint_position[i],
-                0.0001
-        );
+        // Limit position change per call to max_change rad
+        double delta = m_last_command.position[i] - m_current_joint_position[i];
+        if(std::abs(delta) > max_change)
+        {
+               delta = std::copysign(max_change, delta);
+        }
 
         m_joint_handles[i].setCommand(m_current_joint_position[i] + delta);
     }
 }
 
-//void JointPositionController::command_cb(sensor_msgs::JointState const& msg)
 void JointPositionController::command_cb(std_msgs::Float64 const& msg)
 {
+    ROS_INFO_STREAM("New pose: " << msg.data);
     std::lock_guard<std::mutex> lock(m_command_mutex);
 
-    ROS_INFO_STREAM("q_target = " << msg.data);
+    //m_last_command = msg
     m_last_command.position[4] = msg.data;
 }
 
