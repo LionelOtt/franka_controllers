@@ -6,24 +6,33 @@ set(CMAKE_BUILD_TYPE Release)
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+
 find_package(
     catkin
     REQUIRED
     COMPONENTS    
         controller_interface
+        dynamic_reconfigure
         franka_hw
         hardware_interface
         pluginlib
         realtime_tools
         roscpp
         sensor_msgs
-    )
+)
+
+generate_dynamic_reconfigure_options(
+    cfg/compliance_param.cfg
+    cfg/desired_mass_param.cfg
+)
+
 
 catkin_package(
     INCLUDE_DIRS include
     LIBRARIES franka_controllers
     CATKIN_DEPENDS
         controller_interface
+        dynamic_reconfigure
         franka_hw
         hardware_interface
         pluginlib
