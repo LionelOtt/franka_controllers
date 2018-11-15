@@ -36,6 +36,13 @@ class JointPositionController :
         ) override;
 
         /**
+         * \brief Initialization of the controller upon activation.
+         *
+         * \param time time at which the controller was activated
+         */
+        void starting(ros::Time const& time) override;
+
+        /**
          * \brief Control update loop execution.
          *
          * \param time current time

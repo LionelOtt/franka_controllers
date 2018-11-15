@@ -68,6 +68,16 @@ bool JointPositionController::init(
     return true;
 }
 
+void JointPositionController::starting(ros::Time const& time)
+{
+    // Store current position in order to prevent arm from jerking to
+    // a random position upon start
+    for(size_t i=0; i<m_joint_handles.size(); ++i)
+    {
+        m_last_command.position[i] = m_joint_handles[i].getPosition();
+    }
+}
+
 void JointPositionController::update(
         ros::Time const&                time,
         ros::Duration const&            period
