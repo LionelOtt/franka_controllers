@@ -11,6 +11,7 @@
 #include <ros/node_handle.h>
 #include <ros/time.h>
 #include <sensor_msgs/JointState.h>
+#include <std_msgs/Float64.h>
 
 
 namespace fc
@@ -57,7 +58,7 @@ class JointPositionController :
          *
          * \param msg control command message
          */
-        void command_cb(sensor_msgs::JointState const& msg);
+        void command_cb(std_msgs::Float64 const& msg);
 
 
     private:
@@ -65,6 +66,8 @@ class JointPositionController :
         std::mutex                      m_command_mutex;
         //! Last command received by the controller
         sensor_msgs::JointState         m_last_command;
+        //! Current value of the joint positions
+        std::array<double, 7>           m_current_joint_position;
         //! Hwardware interface handle
         hardware_interface::PositionJointInterface * m_joint_interface;
         //! Handles to the individual joints

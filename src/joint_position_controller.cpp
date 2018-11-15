@@ -1,4 +1,5 @@
 #include <franka_controllers/joint_position_controller.h>
+#include <franka_controllers/utils.h>
 
 #include <controller_interface/controller_base.h>
 #include <hardware_interface/hardware_interface.h>
@@ -32,11 +33,12 @@ bool JointPositionController::init(
     {
         ROS_ERROR("JointPositionController: Could not parse joint names");
     }
-    if(joint_names.size() != 7)
+    if(joint_names.size() != m_current_joint_position.size())
     {
         ROS_ERROR_STREAM(
             "JointPositionController: Wrong number of joint names, got"
-            << joint_names.size() << " instead of 7 names!"
+            << joint_names.size() << " instead of "
+            << m_current_joint_position.size() << " names!"
         );
         return false;
     }
@@ -59,7 +61,7 @@ bool JointPositionController::init(
     }
 
     m_command_sub = node_handle.subscribe(
-            "command",
+            get_param<std::string>("listen_topic", "/command"),
             1,
             &JointPositionController::command_cb,
             this
@@ -74,7 +76,8 @@ void JointPositionController::starting(ros::Time const& time)
     // a random position upon start
     for(size_t i=0; i<m_joint_handles.size(); ++i)
     {
-        m_last_command.position[i] = m_joint_handles[i].getPosition();
+        m_current_joint_position[i] = m_joint_handles[i].getPosition();
+        m_last_command.position[i] = m_current_joint_position[i];
     }
 }
 
@@ -87,19 +90,29 @@ void JointPositionController::update(
 
     for(size_t i=0; i<m_last_command.position.size(); ++i)
     {
-        m_joint_handles[i].setCommand(m_last_command.position[i]);
+        m_current_joint_position[i] = m_joint_handles[i].getPosition();
+
+        // Limit position change per call to 0.0001 rad
+        double delta = std::min(
+                m_last_command.position[i] - m_current_joint_position[i],
+                0.0001
+        );
+
+        m_joint_handles[i].setCommand(m_current_joint_position[i] + delta);
     }
 }
 
-void JointPositionController::command_cb(sensor_msgs::JointState const& msg)
+//void JointPositionController::command_cb(sensor_msgs::JointState const& msg)
+void JointPositionController::command_cb(std_msgs::Float64 const& msg)
 {
     std::lock_guard<std::mutex> lock(m_command_mutex);
 
-    m_last_command = msg;
+    ROS_INFO_STREAM("q_target = " << msg.data);
+    m_last_command.position[4] = msg.data;
 }
 
 
-}  /* namespace franka_controllers */
+}  /* namespace fc */
 
 
 PLUGINLIB_EXPORT_CLASS(
