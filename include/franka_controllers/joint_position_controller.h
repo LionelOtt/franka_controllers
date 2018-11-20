@@ -11,6 +11,7 @@
 #include <hardware_interface/robot_hw.h>
 #include <ros/node_handle.h>
 #include <ros/time.h>
+#include <sensors_msgs/JointState.h>
 #include <std_msgs/Float64.h>
 
 
